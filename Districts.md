@@ -1,6 +1,6 @@
 | state_id | state_name                  | district_id | district_name                     |
 | -------- | --------------------------- | ----------- | --------------------------------- |
-| 1        | Andaman and Nicobar Islands | 3           | Nicobar"                          |
+| 1        | Andaman and Nicobar Islands | 3           | Nicobar                           |
 | 1        | Andaman and Nicobar Islands | 1           | North and Middle Andaman          |
 | 1        | Andaman and Nicobar Islands | 2           | South Andaman                     |
 | 2        | Andhra Pradesh              | 9           | Anantapur                         |
