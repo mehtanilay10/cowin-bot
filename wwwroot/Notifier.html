@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CoWin Notifier</title>
+
+    <style type="text/css">
+        body {
+            padding: 20px 30px;
+        }
+    </style>
+
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+
+    <link rel="stylesheet"
+          type="text/css"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet"
+          type="text/css"
+          href="https://cdn.datatables.net/1.10.24/css/dataTables.bootstrap5.min.css" />
+
+    <script type="text/javascript" language="javascript">
+        const date = moment().format("DD-MM-YYYY");
+        const columnsToShow = [
+            { data: "name", title: "Name" },
+            { data: "address", title: "Address" },
+            { data: "pincode", title: "Pincode" },
+            { data: "fee_type", title: "Fee" },
+            { data: "date", title: "Date" },
+            { data: "age", title: "Age" },
+            { data: "available", title: "Available" },
+            { data: "vaccine", title: "Vaccine" },
+        ];
+
+        document.addEventListener("DOMContentLoaded", function () {
+            if (Notification.permission !== "granted") {
+                Notification.requestPermission();
+            }
+        });
+
+        $(document).ready(function () {
+            loadData(); // Call for first time
+            setInterval(() => loadData(), 30 * 1000); // Call API every 30 seconds
+        });
+
+        const loadData = () => {
+            const district_id = $("#district_id").val();
+            if (district_id) {
+                try {
+                    $.getJSON(
+                        `https://cdn-api.co-vin.in/api/v2/appointment/sessions/calendarByDistrict?district_id=${district_id}&date=${date}`,
+                        callback
+                    );
+                } catch (e) {
+                    alert("Login in CoWin first");
+                }
+            }
+        };
+
+        const callback = (data) => {
+            // Flat list
+            const centerDetails = data.centers.map((x) => {
+                const nextDate = moment().add(1, "day").format("DD-MM-YYYY");
+                let nextDateSession = undefined;
+                if (x.sessions && x.sessions.length > 0)
+                    nextDateSession = x.sessions.find((x) => x.date === nextDate);
+
+                return {
+                    name: x.name,
+                    address: x.address,
+                    pincode: x.pincode,
+                    fee_type: x.fee_type,
+                    date: nextDateSession ? nextDateSession.date : "N/A",
+                    age: nextDateSession ? nextDateSession.min_age_limit : "N/A",
+                    available: nextDateSession ? nextDateSession.available_capacity : 0,
+                    vaccine: nextDateSession ? nextDateSession.vaccine : "N/A",
+                };
+            });
+
+            // Show notification for available centers
+            let observingCenters = [];
+            if ($("#pincodes").val().length === 0) {
+                // If not observing any center then observe all centers
+                observingCenters = centerDetails.filter((x) => x.available > 0);
+            } else {
+                // If specified pincode then look for only those
+                const observingPincodes = $("#pincodes")
+                    .val()
+                    .split(",")
+                    .map((x) => parseInt(x, 10));
+
+                centerDetails.filter((x) => observingPincodes.indexOf(x.pincode) !== -1 && x.available > 0);
+            }
+
+            observingCenters.forEach((center) => showNotification(`Found ${center.available} in ${center.name}`));
+
+            // Update Datatable
+            $("#dataTable").DataTable({
+                paging: false,
+                destroy: true,
+                order: [
+                    [6, "desc"],
+                    [7, "asc"],
+                ],
+                data: centerDetails,
+                columns: columnsToShow,
+            });
+        };
+
+        const showNotification = (desc) => {
+            // If does not have permission then request again
+            if (Notification.permission !== "granted") {
+                Notification.requestPermission();
+            } else {
+                // Create a notification to show
+                var notification = new Notification("Find Vaccine Center (India)", {
+                    icon: "/logo.jpg",
+                    body: desc,
+                });
+
+                notification.onclick = function () {
+                    console.log("Notification clicked");
+                };
+
+                notification.onclose = function () {
+                    console.log("Notification closed");
+                };
+            }
+        };
+    </script>
+</head>
+<body>
+    <div class="row" style="margin-bottom: 50px">
+        <div class="col">
+            <input type="text"
+                   class="form-control"
+                   id="district_id"
+                   placeholder="District Id"
+                   value="770"
+                   required />
+        </div>
+        <div class="col">
+            <input type="text"
+                   class="form-control"
+                   id="pincodes"
+                   placeholder="Comma seperated Pin codes"
+                   value="380061,380060,388124"
+                   required />
+        </div>
+    </div>
+    <table id="dataTable" class="table table-striped"></table>
+</body>
+</html>
