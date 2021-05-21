@@ -15,6 +15,7 @@
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
     <script type="text/javascript" src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <link rel="stylesheet"
           type="text/css"
@@ -22,6 +23,7 @@
     <link rel="stylesheet"
           type="text/css"
           href="https://cdn.datatables.net/1.10.24/css/dataTables.bootstrap5.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
     <script type="text/javascript" language="javascript">
         const date = moment().format("DD-MM-YYYY");
@@ -32,8 +34,10 @@
             { data: "fee_type", title: "Fee" },
             { data: "date", title: "Date" },
             { data: "age", title: "Age" },
-            { data: "available", title: "Available" },
             { data: "vaccine", title: "Vaccine" },
+            { data: "available_total", title: "Total Availablity" },
+            { data: "available_dose1", title: "Available for Dose-1" },
+            { data: "available_dose2", title: "Available for Dose-2" },
         ];
 
         document.addEventListener("DOMContentLoaded", function () {
@@ -43,9 +47,27 @@
         });
 
         $(document).ready(function () {
+            loadDistricts();
             loadData(); // Call for first time
-            setInterval(() => loadData(), 30 * 1000); // Call API every 30 seconds
+            setInterval(() => loadData(), 3 * 1000); // Call API every 3 seconds
         });
+
+        const loadDistricts = () => {
+            const districtJsonFile = "/districts.json";
+            $.getJSON(districtJsonFile, function (data) {
+                const options = data.map((x) => ({
+                    id: x.district_id,
+                    text: `${x.district_id} - ${x.district_name} - ${x.state_name}`,
+                }));
+
+                $("#district_id").select2({
+                    data: options,
+                });
+
+                $("#district_id").val(770);
+                $("#district_id").trigger("change");
+            });
+        };
 
         const loadData = () => {
             const district_id = $("#district_id").val();
@@ -76,16 +98,20 @@
                     fee_type: x.fee_type,
                     date: nextDateSession ? nextDateSession.date : "N/A",
                     age: nextDateSession ? nextDateSession.min_age_limit : "N/A",
-                    available: nextDateSession ? nextDateSession.available_capacity : 0,
                     vaccine: nextDateSession ? nextDateSession.vaccine : "N/A",
+                    available_total: nextDateSession ? nextDateSession.available_capacity : 0,
+                    available_dose1: nextDateSession ? nextDateSession.available_capacity_dose1 : "N/A",
+                    available_dose2: nextDateSession ? nextDateSession.available_capacity_dose2 : "N/A",
                 };
             });
 
             // Show notification for available centers
             let observingCenters = [];
+
+            const does = $("#does");
             if ($("#pincodes").val().length === 0) {
                 // If not observing any center then observe all centers
-                observingCenters = centerDetails.filter((x) => x.available > 0);
+                observingCenters = observingCenters.filter((x) => x[`available_capacity_dose${does}`] > 0);
             } else {
                 // If specified pincode then look for only those
                 const observingPincodes = $("#pincodes")
@@ -93,7 +119,9 @@
                     .split(",")
                     .map((x) => parseInt(x, 10));
 
-                centerDetails.filter((x) => observingPincodes.indexOf(x.pincode) !== -1 && x.available > 0);
+                observingCenters = centerDetails.filter(
+                    (x) => observingPincodes.indexOf(x.pincode) !== -1 && x[`available_capacity_dose${does}`] > 0
+                );
             }
 
             observingCenters.forEach((center) => showNotification(`Found ${center.available} in ${center.name}`));
@@ -103,8 +131,8 @@
                 paging: false,
                 destroy: true,
                 order: [
-                    [6, "desc"],
-                    [7, "asc"],
+                    [7, "desc"],
+                    [5, "asc"],
                 ],
                 data: centerDetails,
                 columns: columnsToShow,
@@ -135,15 +163,19 @@
 </head>
 <body>
     <div class="row" style="margin-bottom: 50px">
-        <div class="col">
-            <input type="text"
-                   class="form-control"
-                   id="district_id"
-                   placeholder="District Id"
-                   value="770"
-                   required />
+        <div class="col-md-4 col-sm-12">
+            <label for="district_id" class="form-label">Password</label>
+            <select class="form-select" id="district_id" placeholder="Select District"></select>
         </div>
-        <div class="col">
+        <div class="col-md-1 col-sm-12">
+            <label for="dose" class="form-label">Dose</label>
+            <select class="form-select" id="dose" placeholder="Select Dose" value="1" required>
+                <option value="1">1</option>
+                <option value="2">2</option>
+            </select>
+        </div>
+        <div class="col-md-7 col-sm-12">
+            <label for="pincodes" class="form-label">Pincodes</label>
             <input type="text"
                    class="form-control"
                    id="pincodes"
