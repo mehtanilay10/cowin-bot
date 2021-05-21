@@ -108,10 +108,10 @@
             // Show notification for available centers
             let observingCenters = [];
 
-            const does = $("#does");
+            const does = $("#dose").val();
             if ($("#pincodes").val().length === 0) {
                 // If not observing any center then observe all centers
-                observingCenters = observingCenters.filter((x) => x[`available_capacity_dose${does}`] > 0);
+                observingCenters = observingCenters.filter((x) => parseInt(x[`available_dose${does}`]) > 0);
             } else {
                 // If specified pincode then look for only those
                 const observingPincodes = $("#pincodes")
@@ -120,7 +120,7 @@
                     .map((x) => parseInt(x, 10));
 
                 observingCenters = centerDetails.filter(
-                    (x) => observingPincodes.indexOf(x.pincode) !== -1 && x[`available_capacity_dose${does}`] > 0
+                    (x) => observingPincodes.indexOf(x.pincode) !== -1 && parseInt(x[`available_dose${does}`]) > 0
                 );
             }
 
@@ -132,7 +132,7 @@
                 destroy: true,
                 order: [
                     [7, "desc"],
-                    [5, "asc"],
+                    [5, "desc"],
                 ],
                 data: centerDetails,
                 columns: columnsToShow,
@@ -164,7 +164,7 @@
 <body>
     <div class="row" style="margin-bottom: 50px">
         <div class="col-md-4 col-sm-12">
-            <label for="district_id" class="form-label">Password</label>
+            <label for="district_id" class="form-label">District</label>
             <select class="form-select" id="district_id" placeholder="Select District"></select>
         </div>
         <div class="col-md-1 col-sm-12">
@@ -175,7 +175,7 @@
             </select>
         </div>
         <div class="col-md-7 col-sm-12">
-            <label for="pincodes" class="form-label">Pincodes</label>
+            <label for="pincodes" class="form-label">Pin codes</label>
             <input type="text"
                    class="form-control"
                    id="pincodes"
