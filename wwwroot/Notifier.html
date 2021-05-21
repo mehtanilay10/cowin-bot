@@ -108,10 +108,10 @@
             // Show notification for available centers
             let observingCenters = [];
 
-            const does = $("#dose").val();
+            const dose = $("#dose").val();
             if ($("#pincodes").val().length === 0) {
                 // If not observing any center then observe all centers
-                observingCenters = observingCenters.filter((x) => parseInt(x[`available_dose${does}`]) > 0);
+                observingCenters = centerDetails.filter((x) => parseInt(x[`available_dose${dose}`]) > 0);
             } else {
                 // If specified pincode then look for only those
                 const observingPincodes = $("#pincodes")
@@ -120,7 +120,7 @@
                     .map((x) => parseInt(x, 10));
 
                 observingCenters = centerDetails.filter(
-                    (x) => observingPincodes.indexOf(x.pincode) !== -1 && parseInt(x[`available_dose${does}`]) > 0
+                    (x) => observingPincodes.indexOf(x.pincode) !== -1 && parseInt(x[`available_dose${dose}`]) > 0
                 );
             }
 
